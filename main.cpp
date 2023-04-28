@@ -1,3 +1,5 @@
+// PIN 33 es el pin del RTC
+
 //=====[Libraries]=============================================================
 
 #include "mbed.h"
@@ -46,6 +48,8 @@ UnbufferedSerial uartUsb(USBTX, USBRX, 115200);
 
 AnalogIn lm35(A1);
 
+//comentario
+//Pines del teclado
 DigitalOut keypadRowPins[KEYPAD_NUMBER_OF_ROWS] = {PB_3, PB_5, PC_7, PA_15};
 DigitalIn keypadColPins[KEYPAD_NUMBER_OF_COLS]  = {PB_12, PB_13, PB_15, PC_6};
 
@@ -124,6 +128,8 @@ int main()
     outputsInit();
     while (true) {
         alarmActivationUpdate();
+        //comentario
+        //Cada vez pasa por aca se activan los pines del teclado para poder leer si se apreto una tecla
         alarmDeactivationUpdate();
         uartTask();
         eventLogUpdate();
@@ -344,6 +350,7 @@ void uartTask()
             
         case 's':
         case 'S':
+            // rtcTime es la estructura relacionada al tiempo hora etc...
             struct tm rtcTime;
             int strIndex;
                     
@@ -428,7 +435,52 @@ void uartTask()
                     uartUsb.write( "\r\n", 2 );
                 }
                 break;
+            case 'p':
+            case 'P':
+                if(matrixKeypadCodeIndex == 0)    
+                    sprintf ( str, "matrixKeypadState = MATRIX_KEYPAD_SCANNING");
+                else if(matrixKeypadCodeIndex == 1)
+                    sprintf ( str, "matrixKeypadState = MATRIX_KEYPAD_DEBOUNCE");
+                else if(matrixKeypadCodeIndex == 2)
+                    sprintf ( str, "matrixKeypadState = MATRIX_KEYPAD_KEY_HOLD_PRESSED");
+                uartUsb.write( str , strlen(str) );
+                uartUsb.write( "\r\n", 2 );
+            break;
+            case 'q':
+            case 'Q':
+                sprintf ( str, "accumulatedDebounceMatrixKeypadTime = %i", accumulatedDebounceMatrixKeypadTime);
+                uartUsb.write( str , strlen(str) );
+                uartUsb.write( "\r\n", 2 );
+            break;
+            case 'r':
+            case 'R':
 
+            char keyDetected;
+            keyDetected = matrixKeypadScan();
+            sprintf (str, "Tecla %c", keyDetected);
+            uartUsb.write( str , strlen(str) );
+            uartUsb.write( "\r\n", 2 );
+            break;
+            case 'w':
+            case 'W':
+                if(matrixKeypadCodeIndex == 0)    
+                    sprintf ( str, "matrixKeypadState = MATRIX_KEYPAD_SCANNING");
+                else if(matrixKeypadCodeIndex == 1)
+                    sprintf ( str, "matrixKeypadState = MATRIX_KEYPAD_DEBOUNCE");
+                else if(matrixKeypadCodeIndex == 2)
+                    sprintf ( str, "matrixKeypadState = MATRIX_KEYPAD_KEY_HOLD_PRESSED");
+                uartUsb.write( str , strlen(str) );
+                uartUsb.write( "\r\n", 2 );
+            
+                sprintf ( str, "accumulatedDebounceMatrixKeypadTime = %i", accumulatedDebounceMatrixKeypadTime);
+                uartUsb.write( str , strlen(str) );
+                uartUsb.write( "\r\n", 2 );
+            char keyDetected2;
+            keyDetected2 = matrixKeypadScan();
+            sprintf (str, "Tecla %c", keyDetected2);
+            uartUsb.write( str , strlen(str) );
+            uartUsb.write( "\r\n", 2 );
+            break;
         default:
             availableCommands();
             break;
@@ -449,7 +501,12 @@ void availableCommands()
     uartUsb.write( "Press 'c' or 'C' to get lm35 reading in Celsius\r\n", 49 );
     uartUsb.write( "Press 's' or 'S' to set the date and time\r\n", 43 );
     uartUsb.write( "Press 't' or 'T' to get the date and time\r\n", 43 );
-    uartUsb.write( "Press 'e' or 'E' to get the stored events\r\n\r\n", 45 );
+    uartUsb.write( "Press 'e' or 'E' to get the stored events\r\n", 43 );
+    uartUsb.write( "Press 'p' or 'P' to var matrixKeypadState\r\n", 43 );
+    uartUsb.write( "Press 'q' or 'Q' to var accumulatedDebounceMatrixKeypadTime\r\n", 61 );
+    uartUsb.write( "Press 'r' or 'R' to number of key\r\n", 35 );
+    uartUsb.write( "Press 'w' or 'W' to option q p r w together\r\n\r\n", 46 );
+
 }
 
 bool areEqual()
@@ -564,7 +621,11 @@ char matrixKeypadUpdate()
 {
     char keyDetected = '\0';
     char keyReleased = '\0';
-
+    
+    //char str[100];
+    //sprintf (str, "matrixKeypadState: %i\r\n", matrixKeypadState );
+    //int stringLength = strlen(str);
+    //uartUsb.write( str, stringLength );
     switch( matrixKeypadState ) {
 
     case MATRIX_KEYPAD_SCANNING:
